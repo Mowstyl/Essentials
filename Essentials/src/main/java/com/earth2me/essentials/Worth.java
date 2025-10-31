@@ -7,12 +7,16 @@ import com.earth2me.essentials.craftbukkit.Inventories;
 import com.earth2me.essentials.utils.VersionUtil;
 import net.ess3.api.TranslatableException;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.spongepowered.configurate.CommentedConfigurationNode;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.util.Locale;
+import java.util.*;
 
 public class Worth implements IConf {
     private final EssentialsConfiguration config;
@@ -53,6 +57,14 @@ public class Worth implements IConf {
             result = config.getBigDecimal("worth." + itemname + ".*", BigDecimal.ONE.negate());
         }
 
+        // Check for matches with potion meta and enchantments
+        if (result.signum() < 0) {
+            final String extra = getExtraData(ess, itemStack.getItemMeta()).toLowerCase(Locale.ENGLISH).replace("_", "");
+            if (!extra.isEmpty()) {
+                result = config.getBigDecimal("worth." + itemname + "{" + extra + "}", BigDecimal.ONE.negate());
+            }
+        }
+
         // Check for matches with item name alone
         if (result.signum() < 0) {
             result = config.getBigDecimal("worth." + itemname, BigDecimal.ONE.negate());
@@ -62,6 +74,49 @@ public class Worth implements IConf {
             return null;
         }
         return result;
+    }
+
+    private String getExtraData(final IEssentials ess, final ItemMeta meta) {
+        String potiontype = null;
+        String enchantments = null;
+        if (meta instanceof PotionMeta) {
+            PotionMeta pmeta = (PotionMeta) meta;
+            if (pmeta.getBasePotionType() != null) {
+                potiontype = pmeta.getBasePotionType().toString();
+            }
+        }
+        if (meta instanceof EnchantmentStorageMeta) {
+            EnchantmentStorageMeta emeta = (EnchantmentStorageMeta) meta;
+            enchantments = getEnchantmentMeta(ess, emeta.getStoredEnchants());
+        }
+        else if (meta != null) {
+            enchantments = getEnchantmentMeta(ess, meta.getEnchants());
+        }
+        String extra = "";
+        if (enchantments != null) {
+            extra += "enchantments:[" + enchantments + "]";
+        }
+        if (potiontype != null) {
+            if (enchantments != null) {
+                extra += ",";
+            }
+            extra += "potion:" + potiontype;
+        }
+        return extra;
+    }
+
+    private String getEnchantmentMeta(final IEssentials ess, final Map<Enchantment, Integer> enchantments) {
+        if (enchantments.isEmpty())
+            return null;
+        SortedSet<Enchantment> keys = new TreeSet<>(Comparator.comparing(Enchantment::getName));
+        keys.addAll(enchantments.keySet());
+        String[] enchantmentList = new String[keys.size()];
+        int i = 0;
+        for (Enchantment key : keys) {
+            enchantmentList[i] = key.getName() + ":" + enchantments.get(key);
+            i++;
+        }
+        return String.join(",", enchantmentList);
     }
 
     /**
