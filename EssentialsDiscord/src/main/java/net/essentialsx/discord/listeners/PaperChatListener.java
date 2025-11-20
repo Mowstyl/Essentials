@@ -33,7 +33,7 @@ public class PaperChatListener extends PaperChatListenerProvider {
 
             String rawMessage = chatEvent.getMessage();
             rawMessage = rawMessage.replaceAll("<glyph:antark_([a-z0-9])>", "\uD80C\uDC79");
-            jda.sendChatMessage(player, chatEvent.getMessage());
+            jda.sendChatMessage(player, rawMessage);
         });
     }
 }
