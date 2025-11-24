@@ -31,8 +31,19 @@ public abstract class EssentialsLoopCommand extends EssentialsCommand {
             throw new PlayerNotFoundException();
         }
 
-        if (sender.isPlayer() && (searchTerm.equals("@s") || searchTerm.equals("@p"))) {
+        if (sender.isPlayer() && (searchTerm.equals("@s"))) {
             userConsumer.accept((User) sender.getUser());
+            return;
+        }
+
+        if (searchTerm.startsWith("@p") || searchTerm.startsWith("@r") || searchTerm.startsWith("@a") || searchTerm.startsWith("@e") || searchTerm.startsWith("@n")) {
+            List<Entity> rawTargets = Bukkit.selectEntities(sender.getSender(), searchTerm);
+            List<User> targets = rawTargets.stream()
+                    .filter((e) -> e instanceof Player)
+                    .map((e) -> ess.getUser((Player) e))
+                    .collect(Collectors.toList());
+            for (User target : targets)
+                userConsumer.accept(target);
             return;
         }
 
