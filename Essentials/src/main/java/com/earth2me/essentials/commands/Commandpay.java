@@ -35,6 +35,10 @@ public class Commandpay extends EssentialsLoopCommand {
             throw new TranslatableException("payMustBePositive");
         }
 
+        if (ogStr.contains(".")) {
+            throw new Exception("Amount must be an Integer Number");
+        }
+
         final String sanitizedString = ogStr.replaceAll("[^0-9.]", "");
 
         if (sanitizedString.isEmpty()) {
